@@ -1,43 +1,117 @@
-{% if collection.all_tags.size > 0 %}
-  {% assign ColorTags = section.settings.colorValue | replace: ' ,', ',' | replace: ', ', ',' | split: ',' %}
-    {% assign SizeTags = section.settings.sizeValue | replace: ' ,', ',' | replace: ', ', ',' | split: ',' %}
-  {% assign priceTags = section.settings.priceValue | replace: ' ,', ',' | replace: ', ', ',' | split: ',' %}
-  <span>Colors</span>
-  <ul class="tag-filters">
-    {% for tag in ColorTags %}
-      {% if current_tags contains tag %}
-        <li class="tag-filters__item active">{{ tag | link_to_remove_tag: tag }}</li>
-      {% else %}
-        <li class="tag-filters__item">{{ tag | link_to_add_tag: tag }}</li>
-      {% endif %}
-    {% endfor %}
-  </ul>
-   <span>Sizes</span>
-   <ul class="tag-filters">
-    {% for tag in SizeTags %}
-      {% if current_tags contains tag %}
-        <li class="tag-filters__item active">{{ tag | link_to_remove_tag: tag }}</li>
-      {% else %}
-        <li class="tag-filters__item">{{ tag | link_to_add_tag: tag }}</li>
-      {% endif %}
-    {% endfor %}
-  </ul>
-   <span>Price</span>
-   <ul class="tag-filters">
-    {% for tag in priceTags %}
-      {% if current_tags contains tag %}
-        <li class="tag-filters__item active">{{ tag | link_to_remove_tag: tag }}</li>
-      {% else %}
-        <li class="tag-filters__item">{{ tag | link_to_add_tag: tag }}</li>
-      {% endif %}
-    {% endfor %}
-  </ul>
-{% endif %}
+<div class="container">
+  <div class="row">
+    <div class="col-sm-4 .col-xl-4 .col-lg-4">
+   <form class="filter-form">
+  {%- for filter in collection.filters -%}
+    <details class="filter-group">
+      <summary class="filter-group-summary">
+        <div>
+          <span>{{ filter.label }}</span>
 
+          {%- if filter.active_values.size > 0 -%}
+            <span>({{ filter.active_values.size }})</span>
+          {%- endif -%}
+        </div>
+      </summary>
 
+      <div class="filter-group-display">
+        <div class="filter-group-display__header">
+          <span class="filter-group-display__header-selected">{{ filter.active_values.size }} selected</span>
 
-<div class='container'>
-  {%- paginate collection.products by 4 -%}
+          {%- if filter.active_values.size > 0 -%}
+            <a href="{{ filter.url_to_remove }}" class="filter-group-display__header-reset">Reset</a>
+          {%- endif -%}
+        </div>
+
+        {%- case filter.type -%}
+          {%- when 'boolean' or 'list' -%}
+            <ul class="filter-group-display__list">
+              {%- for filter_value in filter.values -%}
+                <li class="filter-group-display__list-item">
+                  <label for="Filter-{{ filter.param_name }}-{{ forloop.index }}">
+                  <input type="checkbox"
+                    name="{{ filter_value.param_name }}"
+                    value="{{ filter_value.value }}"
+                    id="Filter-{{ filter.param_name }}-{{ forloop.index }}"
+                    {% if filter_value.active -%}checked{%- endif %}
+                    {% if filter_value.count == 0 and filter_value.active == false -%}disabled{%- endif %}
+                  >{{ filter_value.label }}</label>
+                </li>
+              {%- endfor -%}
+            </ul>
+
+            <div class="filter-group-display__submit">
+              <input type="submit" value="Apply">
+            </div>
+          {%- when 'price_range' -%}
+            <div class="filter-group-display__price-range">
+              <div class="filter-group-display__price-range-from">
+                <span>{{ cart.currency.symbol }}</span>
+
+                <input name="{{ filter.min_value.param_name }}"
+                  id="Filter-{{ filter.min_value.param_name }}"
+                  {% if filter.min_value.value -%}
+                    value="{{ filter.min_value.value | money_without_currency | replace: ',', '' }}"
+                  {%- endif %}
+                  type="number"
+                  placeholder="0"
+                  min="0"
+                  max="{{ filter.range_max | money_without_currency | replace: ',', '' }}"
+                >
+
+                <label for="Filter-{{ filter.min_value.param_name }}">From</label>
+              </div>
+              <div class="filter-group-display__price-range-to">
+                <span>{{ cart.currency.symbol }}</span>
+
+                <input name="{{ filter.max_value.param_name }}"
+                  id="Filter-{{ filter.max_value.param_name }}"
+                  {% if filter.max_value.value -%}
+                    value="{{ filter.max_value.value | money_without_currency | replace: ',', '' }}"
+                  {%- endif %}
+                  type="number"
+                  placeholder="{{ filter.range_max | money_without_currency | replace: ',', '' }}"
+                  min="0"
+                  max="{{ filter.range_max | money_without_currency | replace: ',', '' }}"
+                >
+
+                <label for="Filter-{{ filter.max_value.param_name }}">To</label>
+              </div>
+            </div>
+
+            <div class="filter-group-display__submit">
+              <input type="submit" value="Apply">
+            </div>
+        {%- endcase -%}
+      </div>
+    </details>
+  {%- endfor -%}
+
+  <div class="active-filters">
+    <a href="{{ collection.url }}?sort_by={{ collection.sort_by }}" class="active-filters__clear">Clear all</a>
+
+    {%- for filter in collection.filters -%}
+      {%- if filter.type == "price_range" -%}
+        {%- if filter.min_value.value != nil or filter.max_value.value != nil -%}
+          <a class="active-filters__remove-filter" href="{{ filter.url_to_remove }}">
+            {%- assign min_value = filter.min_value.value | default: 0 -%}
+            {%- assign max_value = filter.max_value.value | default: filter.range_max -%}
+            {{ min_value | money }} - {{ max_value | money }} X
+          </a>
+        {%- endif -%}
+      {%- else -%}
+        {%- for filter_value in filter.active_values -%}
+          <a class="active-filters__remove-filter" href="{{ filter_value.url_to_remove }}">
+            {{ filter.label }}: {{ filter_value.label }} X
+          </a>
+        {%- endfor -%}
+      {%- endif- %}
+    {%- endfor -%}
+  </div>
+</form>
+    </div>
+    <div class="col-sm-8 .col-xl-8 .col-lg-8">
+      {%- paginate collection.products by 4 -%}
     <div class='row grid--view-items' id="MainContent" >
       {%- for product in collection.products -%}
       <div class="col-sm col-lg-3 col-xl-3 product" id="product-{{ forloop.index | plus:paginate.current_offset }}">
@@ -65,8 +139,11 @@
  </div>
     {% endpaginate %}
  
+    </div>
+    
+  </div>
 </div>
-</div>
+
 <style>
 .load-more_wrap{
  margin-top: 60px; 
@@ -80,37 +157,40 @@ ul.pagination{
 }
 </style>
 <script>
-$('.js-load-more').on('click', function(){
- var $this =$(this),
- totalPages = parseInt($('[data-all-pages]').val()),
- currentPage = parseInt($('[data-this-page]').val()),
- datacollurl = $('[data-coll-url]').val();;
- $this.attr('disabled', true);
- $this.find('[load-more-text]').addClass('hide');
- $this.find('[loader]').removeClass('hide');
- var nextUrl = $('[data-next-link]').val();
- var current_page_new = currentPage + 1;
- var next_coll = currentPage + 2;
- //alert(current_page_new)
- //return false;
- $.ajax({
- url: nextUrl,
- type: 'GET',
- dataType: 'html',
- success: function(responseHTML){
- $('[data-next-link]').val(datacollurl + "?page="+next_coll);
- $('[data-this-page]').val(current_page_new);
- $('.grid--view-items').append($(responseHTML).find('.grid--view-items').html());
- },
- complete: function() {
- if(current_page_new < totalPages) {
- $this.attr('disabled', false); $this.find('[load-more-text]').removeClass('hide'); $this.find('[loader]').addClass('hide');
- } 
- if(current_page_new >= totalPages) {
- $this.find('[load-more-text]').text('Products Finished').removeClass('hide'); $this.find('[loader]').addClass('hide');
- } 
- }
- })
+$('.js-load-more').on('click', function() {
+    var $this = $(this),
+        totalPages = parseInt($('[data-all-pages]').val()),
+        currentPage = parseInt($('[data-this-page]').val()),
+        datacollurl = $('[data-coll-url]').val();;
+    $this.attr('disabled', true);
+    $this.find('[load-more-text]').addClass('hide');
+    $this.find('[loader]').removeClass('hide');
+    var nextUrl = $('[data-next-link]').val();
+    var current_page_new = currentPage + 1;
+    var next_coll = currentPage + 2;
+    //alert(current_page_new)
+    //return false;
+    $.ajax({
+        url: nextUrl,
+        type: 'GET',
+        dataType: 'html',
+        success: function(responseHTML) {
+            $('[data-next-link]').val(datacollurl + "?page=" + next_coll);
+            $('[data-this-page]').val(current_page_new);
+            $('.grid--view-items').append($(responseHTML).find('.grid--view-items').html());
+        },
+        complete: function() {
+            if (current_page_new < totalPages) {
+                $this.attr('disabled', false);
+                $this.find('[load-more-text]').removeClass('hide');
+                $this.find('[loader]').addClass('hide');
+            }
+            if (current_page_new >= totalPages) {
+                $this.find('[load-more-text]').text('Products Finished').removeClass('hide');
+                $this.find('[loader]').addClass('hide');
+            }
+        }
+    })
 });
 </script>
 
@@ -132,13 +212,13 @@ $('.js-load-more').on('click', function(){
   "type": "textarea",
   "id": "SizeTags",
   "label": "Size value",
-  "default": "s ,m ,xs ,sl"
+  "default": "s, m, xs, sl,x l"
 },
     {
   "type": "textarea",
   "id": "priceTags",
   "label": "Price Value",
-  "default": "10 ,20 ,100 ,200"
+  "default": "10, 20, 100, 200"
 }
 
   ],
