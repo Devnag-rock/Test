@@ -1,0 +1,98 @@
+{{ 'option_selection.js' | shopify_asset_url | script_tag }}
+
+{% assign current_variant = product.selected_or_first_available_variant %}
+<div class="container">
+  <div class="row">
+    <div class="slider-container col-xl-6">
+      {% assign featured_media = current_variant.featured_media %}
+
+      <div class="slider-for">
+        {% for media in product.media %}
+          <img
+            class="item-slick {{ media.alt | replace: '/', ''}}"
+            src="{{ media |img_url: ''  }}"
+            alt="{{ media.alt }}"
+          >
+        {% endfor %}
+      </div>
+      <div class="slider-nav">
+        {% for media in product.media %}
+          <img
+            class="item-slick {{ media.alt | replace: '/', ''}}"
+            src="{{ media |img_url: ''  }}"
+            alt="{{ media.alt }}"
+          >
+        {% endfor %}
+      </div>
+    </div>
+    <div class="col-xl-6">
+      <h2>{{ product.title }}</h2>
+
+      <form action="/cart/add" method="post" enctype="multipart/form-data" class="product_form">
+        <div class="price">
+          <span class="price-reg">{{ current_variant.price | money }}</span>
+
+          {% if current_variant.compare_at_price > current_variant.price %}
+            <span class="price-sale"
+              ><s>{{ current_variant.compare_at_price | money }}</s></span
+            >
+          {% endif %}
+        </div>
+        <select id="product-select" name="id">
+          {% for variant in product.variants %}
+            <option
+              value="{{ variant.id }}"
+              {% if variant == product.selected_or_first_available_variant %}
+                selected="selected"
+              {% endif %}
+            >
+              {{ variant.title }} - {{ variant.price | money }}
+            </option>
+          {% endfor %}
+        </select>
+        {% if product.available and product.variants.size > 1 %}
+          {% render 'swatch' for product.options as swatch %}
+        {% endif %}
+        <input type="submit" name="add" id="add" value="Add to Cart" class="button">
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+        var selectCallback = function(variant, selector) {
+
+         if(variant){
+            if (variant.compare_at_price > variant.price) {
+             $(".price-sale s").text(variant.price);
+     } else {
+    $(".price-reg").text(Shopify.formatMoney(variant.price));
+       }
+    if(variant.available){
+    $('input[name=add]').attr('disable',false);
+    $('input[name=add]').val('Add To Cart');
+   }else{
+    $('input[name=add]').attr('disable',true);
+     $('input[name=add]').val('Sold Out');
+  }
+         }
+     }
+
+     new Shopify.OptionSelectors('product-select', {
+       product: {{ product | json }},
+       onVariantSelected: selectCallback,
+       enableHistoryState: true
+     });
+</script>
+
+{% schema %}
+{
+  "name": "Section name",
+  "settings": []
+}
+{% endschema %}
+
+{% stylesheet %}
+{% endstylesheet %}
+
+{% javascript %}
+{% endjavascript %}

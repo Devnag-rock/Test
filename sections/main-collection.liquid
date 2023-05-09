@@ -1,0 +1,151 @@
+{% if collection.all_tags.size > 0 %}
+  {% assign ColorTags = section.settings.colorValue | replace: ' ,', ',' | replace: ', ', ',' | split: ',' %}
+    {% assign SizeTags = section.settings.sizeValue | replace: ' ,', ',' | replace: ', ', ',' | split: ',' %}
+  {% assign priceTags = section.settings.priceValue | replace: ' ,', ',' | replace: ', ', ',' | split: ',' %}
+  <span>Colors</span>
+  <ul class="tag-filters">
+    {% for tag in ColorTags %}
+      {% if current_tags contains tag %}
+        <li class="tag-filters__item active">{{ tag | link_to_remove_tag: tag }}</li>
+      {% else %}
+        <li class="tag-filters__item">{{ tag | link_to_add_tag: tag }}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+   <span>Sizes</span>
+   <ul class="tag-filters">
+    {% for tag in SizeTags %}
+      {% if current_tags contains tag %}
+        <li class="tag-filters__item active">{{ tag | link_to_remove_tag: tag }}</li>
+      {% else %}
+        <li class="tag-filters__item">{{ tag | link_to_add_tag: tag }}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+   <span>Price</span>
+   <ul class="tag-filters">
+    {% for tag in priceTags %}
+      {% if current_tags contains tag %}
+        <li class="tag-filters__item active">{{ tag | link_to_remove_tag: tag }}</li>
+      {% else %}
+        <li class="tag-filters__item">{{ tag | link_to_add_tag: tag }}</li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+{% endif %}
+
+
+
+<div class='container'>
+  {%- paginate collection.products by 4 -%}
+    <div class='row grid--view-items' id="MainContent" >
+      {%- for product in collection.products -%}
+      <div class="col-sm col-lg-3 col-xl-3 product" id="product-{{ forloop.index | plus:paginate.current_offset }}">
+     
+          <div class="card">
+            <img class="card-img-top" src="{{ product.featured_image | img_url: 'master' }}" alt="Card image cap">
+            <div class="card-body">
+             <a href='{{ product.url }}' ><h5 class="card-title">{{ product.title }}</h5></a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+<input type="hidden" value="{{ paginate.next.url }}" data-next-link>
+ <input type="hidden" value="{{ paginate.pages }}" data-all-pages>
+ <input type="hidden" value="{{ paginate.current_page }}" data-this-page>
+ <input type="hidden" value="{{ collection.url }}" data-coll-url>
+ <div class="load-more_wrap">
+ <button class="btn js-load-more">
+ <span load-more-text>Load more</span>
+ <span class="hide" loader>
+ <img src="{{ 'loader.gif' | asset_url }}"/>
+ </span>
+ </button>
+ </div>
+    {% endpaginate %}
+ 
+</div>
+</div>
+<style>
+.load-more_wrap{
+ margin-top: 60px; 
+ text-align: center;
+}
+.load-more_wrap img{
+ max-width: 25px;
+}
+ul.pagination{
+ display: none !important;
+}
+</style>
+<script>
+$('.js-load-more').on('click', function(){
+ var $this =$(this),
+ totalPages = parseInt($('[data-all-pages]').val()),
+ currentPage = parseInt($('[data-this-page]').val()),
+ datacollurl = $('[data-coll-url]').val();;
+ $this.attr('disabled', true);
+ $this.find('[load-more-text]').addClass('hide');
+ $this.find('[loader]').removeClass('hide');
+ var nextUrl = $('[data-next-link]').val();
+ var current_page_new = currentPage + 1;
+ var next_coll = currentPage + 2;
+ //alert(current_page_new)
+ //return false;
+ $.ajax({
+ url: nextUrl,
+ type: 'GET',
+ dataType: 'html',
+ success: function(responseHTML){
+ $('[data-next-link]').val(datacollurl + "?page="+next_coll);
+ $('[data-this-page]').val(current_page_new);
+ $('.grid--view-items').append($(responseHTML).find('.grid--view-items').html());
+ },
+ complete: function() {
+ if(current_page_new < totalPages) {
+ $this.attr('disabled', false); $this.find('[load-more-text]').removeClass('hide'); $this.find('[loader]').addClass('hide');
+ } 
+ if(current_page_new >= totalPages) {
+ $this.find('[load-more-text]').text('Products Finished').removeClass('hide'); $this.find('[loader]').addClass('hide');
+ } 
+ }
+ })
+});
+</script>
+
+
+
+{% schema %}
+{
+  "name": "t:sections.featured-collection.name",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+{
+  "type": "textarea",
+  "id": "colorValue",
+  "label": "Color Value",
+  "default": "Black, Slate, Military Green, white, pink"
+},
+    {
+  "type": "textarea",
+  "id": "SizeTags",
+  "label": "Size value",
+  "default": "s ,m ,xs ,sl"
+},
+    {
+  "type": "textarea",
+  "id": "priceTags",
+  "label": "Price Value",
+  "default": "10 ,20 ,100 ,200"
+}
+
+  ],
+  "presets": [
+    {
+      "name": "t:sections.featured-collection.presets.name"
+    }
+  ]
+}
+{% endschema %}
